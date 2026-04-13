@@ -152,19 +152,33 @@ export const setupPage = (userId) => html`
         <div id="ios" class="tab-content active">
             <div class="card">
                 <div class="step">
-                    <h3>1. Create Shortcut</h3>
-                    <p>Open <b>Shortcuts</b> app → New Shortcut → Add Action: <b>"Get Contents of URL"</b>.</p>
-                </div>
-                <div class="step">
-                    <h3>2. Configure URL</h3>
-                    <p>Set URL to: <code>https://sitback-worker.muhammad-hunble.workers.dev/wfo</code> (or <code>/so</code> for sign-off).</p>
-                </div>
-                <div class="step">
-                    <h3>3. Add Headers</h3>
-                    <p>Tap "Method" → Change to <b>POST</b>. Add these headers:</p>
+                    <h3>1. Create Triggers</h3>
+                    <p>Open <b>Shortcuts</b> app → <b>Automation</b> tab → New Automation:</p>
                     <ul>
-                        <li><code>X-API-Key</code>: <code>sitback_secure_key_3139f7d0</code></li>
-                        <li><code>X-User-ID</code>: <code>${userId}</code></li>
+                        <li><b>Check-in:</b> Trigger on "Arrive" at Office.</li>
+                        <li><b>Sign-off:</b> Trigger on "Leave" Office.</li>
+                    </ul>
+                </div>
+                <div class="step">
+                    <h3>2. Add Time Filters</h3>
+                    <p>Add an <b>"If"</b> action to check the current time:</p>
+                    <ul>
+                        <li><b>WFO (7 AM - 12 PM):</b> Run only if arriving in the morning.</li>
+                        <li><b>SO (5:30 PM - 12 AM):</b> Run only if leaving in the evening.</li>
+                    </ul>
+                </div>
+                <div class="step">
+                    <h3>3. Configure URL Action</h3>
+                    <p>Add <b>"Get Contents of URL"</b> with these details:</p>
+                    <ul>
+                        <li><b>URL:</b> <code>https://sitback-worker.muhammad-hunble.workers.dev/wfo</code> (or <code>/so</code>)</li>
+                        <li><b>Method:</b> <code>POST</code></li>
+                        <li><b>Headers:</b>
+                            <ul>
+                                <li><code>X-API-Key</code>: <code>sitback_secure_key_3139f7d0</code></li>
+                                <li><code>X-User-ID</code>: <code>${userId}</code></li>
+                            </ul>
+                        </li>
                     </ul>
                 </div>
             </div>
@@ -174,24 +188,34 @@ export const setupPage = (userId) => html`
         <div id="android" class="tab-content">
             <div class="card">
                 <div class="step">
-                    <h3>1. Install Automation App</h3>
-                    <p>Download <b>MacroDroid</b> or <b>Tasker</b> from the Play Store.</p>
-                </div>
-                <div class="step">
-                    <h3>2. HTTP Request</h3>
-                    <p>Add Action → <b>HTTP Request</b> (Method: <b>POST</b>).</p>
-                    <p>URL: <code>https://sitback-worker.muhammad-hunble.workers.dev/wfo</code></p>
-                </div>
-                <div class="step">
-                    <h3>3. Headers</h3>
-                    <p>Add custom headers:</p>
+                    <h3>1. Geofence Trigger</h3>
+                    <p>In <b>MacroDroid</b> or <b>Tasker</b>, create a new Macro:</p>
                     <ul>
-                        <li><code>X-API-Key</code>: <code>sitback_secure_key_3139f7d0</code></li>
-                        <li><code>X-User-ID</code>: <code>${userId}</code></li>
+                        <li><b>WFO:</b> Trigger on Geofence Entry (Office).</li>
+                        <li><b>SO:</b> Trigger on Geofence Exit (Office).</li>
+                    </ul>
+                </div>
+                <div class="step">
+                    <h3>2. Time Constraint</h3>
+                    <p>Add a <b>Time of Day</b> constraint to the trigger:</p>
+                    <ul>
+                        <li><b>Check-in:</b> Limit to <code>07:00</code> - <code>12:00</code>.</li>
+                        <li><b>Sign-off:</b> Limit to <code>17:30</code> - <code>00:00</code>.</li>
+                    </ul>
+                </div>
+                <div class="step">
+                    <h3>3. HTTP Request</h3>
+                    <p>Action: <b>HTTP Request</b> (Method: <b>POST</b>).</p>
+                    <p><b>URL:</b> <code>https://sitback-worker.muhammad-hunble.workers.dev/wfo</code></p>
+                    <p><b>Headers:</b></p>
+                    <ul>
+                        <li><code>X-API-Key: sitback_secure_key_3139f7d0</code></li>
+                        <li><code>X-User-ID: ${userId}</code></li>
                     </ul>
                 </div>
             </div>
         </div>
+
 
         <script>
             function showTab(id, event) {
