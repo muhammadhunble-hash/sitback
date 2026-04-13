@@ -1,63 +1,59 @@
-# Sitback: Slack Workflow Worker ☁️
+# Sitback | Multi-User Slack Automation 🚀
 
-A high-performance, stateless **Cloudflare Worker** designed to automate your Slack workflows with the **Hono** framework.
+A high-performance, stateless **Cloudflare Worker** designed for you and your friends to automate Slack availability flows.
 
 ## 🛠 Features
 
-- **Stateless Reliability**: Automatically searches Slack history for "today's" messages to manage threading and prevent duplicates.
-- **Lightning Fast**: Powered by Cloudflare's edge network and the Fetch API.
-- **Secure Access**: All endpoints are protected by an `X-API-Key`.
-- **WFO/SO Automation**: Trigger your availability flows remotely via HTTP.
+- **Multi-User Support**: Every user gets their own secure token via Slack OAuth.
+- **Invite Only**: Only users added by the administrator can access the workflows.
+- **Premium Landing Page**: A sleek interface for your friends to connect their Slack accounts.
+- **Stateless Reliability**: Powered by Slack history lookup for accurate threading.
 
-## 🚀 Deployment (Cloudflare Workers)
+## 🚀 Administrator Setup
 
-1. **Install Wrangler CLI** and login:
-   ```bash
-   npx wrangler login
-   ```
+### 1. Slack App Configuration
+1.  Go to your **Slack App Dashboard**.
+2.  Enable **OAuth & Permissions**.
+3.  Add the **Redirect URL**: `https://sitback-worker.your-subdomain.workers.dev/auth/callback`.
+4.  Add the following **User Token Scopes**:
+    - `chat:write`
+    - `channels:history`
+    - `groups:history`
+    - `users:read`
 
-2. **Configure Secrets**:
-   Set your Slack token and API key as encrypted secrets:
-   ```bash
-   npx wrangler secret put SLACK_USER_TOKEN
-   npx wrangler secret put API_KEY
-   ```
+### 2. Set API Secrets
+Run these commands to authorize the worker:
+```bash
+npx wrangler secret put SLACK_CLIENT_ID
+npx wrangler secret put SLACK_CLIENT_SECRET
+npx wrangler secret put API_KEY # Your admin/security key
+```
 
-3. **Deploy**:
-   ```bash
-   npx wrangler deploy
-   ```
+### 3. Deploy
+```bash
+npx wrangler deploy
+```
+
+## 👥 Inviting Friends
+
+To allow a friend to use the system:
+1.  **Get their Slack User ID** (available in their Slack profile).
+2.  **Authorize them** using the Admin API:
+    ```bash
+    curl -X POST https://sitback-worker.<subdomain>.workers.dev/admin/invite \
+      -H "X-API-Key: <your_admin_key>" \
+      -d '{"userId": "U12345"}'
+    ```
+3.  **Send them the link**: `https://sitback-worker.<subdomain>.workers.dev/` to connect their account.
 
 ## 🏗 API Specification
 
-All requests must include the header: `X-API-Key: <your_key>`
+All workflow requests must include the header: `X-User-ID: <their_slack_id>`.
 
 ### ☀️ Morning Check-in (WFO)
 `POST /wfo`
-- Checks if "WFO" was already sent today.
-- If not, sends "WFO" to the `availability` channel.
-
 ### 🌙 Evening Sign-off (SO)
 `POST /so`
-- Finds today's "WFO" message ID.
-- Replies "SO" to that specific thread.
-
-### 💓 Health Check
-`GET /health`
-- Verifies worker status.
-
-## 🗺 Local Development
-
-1. **Install dependencies**: `npm install`
-2. **Start Dev Server**:
-   ```bash
-   npx wrangler dev
-   ```
-3. **Trigger via curl**:
-   ```bash
-   curl -X POST http://localhost:8787/wfo \
-     -H "X-API-Key: sitback_secure_key_3139f7d0"
-   ```
 
 ---
 *Created with ❤️ by Sitback Automation*

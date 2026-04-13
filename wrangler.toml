@@ -3,8 +3,17 @@ main = "src/index.js"
 compatibility_date = "2024-04-01"
 
 [vars]
-# Add non-secret variables here
 DEFAULT_CHANNEL_ID = "C07KKCSHGPJ"
 AVAILABILITY_CHANNEL = "CAP8WL9EZ"
+# The Redirect URI must match what you set in Slack (e.g., https://sitback-worker.yourname.workers.dev/auth/callback)
+SLACK_REDIRECT_URI = "https://sitback-worker.muhammad-hunble.workers.dev/auth/callback"
 
-# Secrets (Token, API_KEY) should be set using 'wrangler secret put'
+[[kv_namespaces]]
+binding = "SITBACK_STORAGE"
+id = "0a20c89b2a624f37a4b8b23d2eb2ccde"
+
+# Secrets to be set via 'wrangler secret put':
+# SLACK_USER_TOKEN (for the admin)
+# SLACK_CLIENT_ID
+# SLACK_CLIENT_SECRET
+# API_KEY (Admin key)

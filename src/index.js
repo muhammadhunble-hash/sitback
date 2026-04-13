@@ -1,88 +1,140 @@
 import { Hono } from 'hono';
 import { findTodayMessage, postMessage } from './slack';
+import { exchangeCodeForToken, saveUserToken, isUserAuthorized, authorizeUser } from './oauth';
+import { landingPage } from './landing';
 
 const app = new Hono();
 
-// Middleware: API Key Authorization
-app.use('*', async (c, next) => {
-    // Skip health check
-    if (c.req.path === '/health') return await next();
-
-    const apiKey = c.req.header('X-API-Key');
-    if (!apiKey || apiKey !== c.env.API_KEY) {
-        return c.json({ error: 'Unauthorized: Invalid or missing API key' }, 401);
+/**
+ * Middleware: Admin Only (using existing API_KEY)
+ */
+const adminOnly = async (c, next) => {
+    const key = c.req.header('X-API-Key');
+    if (!key || key !== c.env.API_KEY) {
+        return c.json({ error: 'Unauthorized: Admin key required' }, 401);
     }
     await next();
+};
+
+/**
+ * Middleware: Invite-only Check
+ * All workflow requests must provide X-User-ID and be authorized
+ */
+const inviteOnly = async (c, next) => {
+    // Skip health, auth, and admin routes
+    if (['/health', '/auth', '/', '/auth/callback', '/admin/invite'].includes(c.req.path)) return await next();
+
+    const userId = c.req.header('X-User-ID');
+
+    if (!userId) return c.json({ error: 'Missing X-User-ID header' }, 400);
+
+    // 1. Check if authorized (Invite list)
+    const authorized = await isUserAuthorized(userId, c.env.SITBACK_STORAGE);
+    if (!authorized) {
+        return c.json({ error: 'Forbidden: You have not been invited to Sitback.' }, 403);
+    }
+
+    // 2. check if token exists
+    const token = await c.env.SITBACK_STORAGE.get(`token:${userId}`);
+    if (!token) {
+        return c.json({ error: 'Token missing: Please visit the landing page to authorize your account.' }, 401);
+    }
+
+    c.set('userToken', token);
+    c.set('userId', userId);
+    await next();
+};
+
+app.use('*', inviteOnly);
+
+/**
+ * Landing Page
+ */
+app.get('/', (c) => {
+    return c.html(landingPage(c.env.SLACK_CLIENT_ID, c.env.SLACK_REDIRECT_URI));
 });
 
 /**
- * Endpoint to trigger WFO (Start Work)
+ * OAuth Callback
+ */
+app.get('/auth/callback', async (c) => {
+    const code = c.req.query('code');
+    if (!code) return c.text('Error: No code provided from Slack', 400);
+
+    try {
+        const { userId, userToken } = await exchangeCodeForToken(code, c.env);
+        
+        // Save the token to KV
+        await saveUserToken(userId, userToken, c.env.SITBACK_STORAGE);
+
+        return c.html(`
+            <div style="font-family: sans-serif; text-align: center; padding: 50px;">
+                <h1 style="color: #6366f1;">Success! 🎉</h1>
+                <p>Sitback is now connected to your Slack account.</p>
+                <p>Your User ID is: <code>${userId}</code></p>
+                <p>Make sure you have been invited by the admin to start using the workflows.</p>
+            </div>
+        `);
+    } catch (error) {
+        return c.text(`Auth Error: ${error.message}`, 500);
+    }
+});
+
+/**
+ * Admin: Invite a Friend
+ * POST /admin/invite
+ * Header: X-API-Key (Admin)
+ */
+app.post('/admin/invite', adminOnly, async (c) => {
+    const { userId } = await c.req.json();
+    if (!userId) return c.json({ error: 'Missing userId in body' }, 400);
+
+    await authorizeUser(userId, c.env.SITBACK_STORAGE);
+    return c.json({ success: true, message: `User ${userId} invited successfully.` });
+});
+
+/**
+ * Workflow: WFO
  * POST /wfo
  */
 app.post('/wfo', async (c) => {
     try {
-        const token = c.env.SLACK_USER_TOKEN;
+        const token = c.get('userToken');
         const channel = c.env.AVAILABILITY_CHANNEL;
 
-        // 1. Check if already sent today
         const existing = await findTodayMessage(channel, 'WFO', token);
         if (existing) {
-            return c.json({ 
-                success: true, 
-                message: 'WFO already sent today', 
-                ts: existing.ts,
-                already_sent: true 
-            });
+            return c.json({ success: true, message: 'WFO already sent', already_sent: true });
         }
 
-        // 2. Send WFO
         const result = await postMessage(channel, 'WFO', token);
-
-        return c.json({
-            success: true,
-            message: 'WFO sent',
-            ts: result.ts
-        });
+        return c.json({ success: true, ts: result.ts });
     } catch (error) {
-        console.error('Error in /wfo:', error);
         return c.json({ error: error.message }, 500);
     }
 });
 
 /**
- * Endpoint to trigger SO (Sign Off)
+ * Workflow: SO
  * POST /so
  */
 app.post('/so', async (c) => {
     try {
-        const token = c.env.SLACK_USER_TOKEN;
+        const token = c.get('userToken');
         const channel = c.env.AVAILABILITY_CHANNEL;
 
-        // 1. Find today's WFO message to thread
         const wfoMessage = await findTodayMessage(channel, 'WFO', token);
         if (!wfoMessage) {
-            return c.json({ error: 'No WFO message found for today. Cannot reply with SO.' }, 404);
+            return c.json({ error: 'No WFO found today' }, 404);
         }
 
-        // 2. Send SO as reply
         const result = await postMessage(channel, 'SO', token, wfoMessage.ts);
-
-        return c.json({
-            success: true,
-            message: 'SO sent as reply',
-            ts: result.ts
-        });
+        return c.json({ success: true, ts: result.ts });
     } catch (error) {
-        console.error('Error in /so:', error);
         return c.json({ error: error.message }, 500);
     }
 });
 
-/**
- * Health Check
- */
-app.get('/health', (c) => {
-    return c.json({ status: 'ok', worker: 'sitback-worker' });
-});
+app.get('/health', (c) => c.json({ status: 'ok' }));
 
 export default app;
