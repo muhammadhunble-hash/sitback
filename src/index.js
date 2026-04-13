@@ -108,10 +108,12 @@ app.get('/setup', async (c) => {
 app.post('/wfo', async (c) => {
     try {
         const token = c.get('userToken');
+        const userId = c.get('userId');
         const channel = c.env.AVAILABILITY_CHANNEL;
 
-        const existing = await findTodayMessage(channel, 'WFO', token);
+        const existing = await findTodayMessage(channel, 'WFO', token, userId);
         if (existing) {
+
             return c.json({ success: true, message: 'WFO already sent', already_sent: true });
         }
 
@@ -129,10 +131,12 @@ app.post('/wfo', async (c) => {
 app.post('/so', async (c) => {
     try {
         const token = c.get('userToken');
+        const userId = c.get('userId');
         const channel = c.env.AVAILABILITY_CHANNEL;
 
-        const wfoMessage = await findTodayMessage(channel, 'WFO', token);
+        const wfoMessage = await findTodayMessage(channel, 'WFO', token, userId);
         if (!wfoMessage) {
+
             return c.json({ error: 'No WFO found today' }, 404);
         }
 

@@ -26,14 +26,11 @@ async function slackApi(method, body, token) {
 }
 
 /**
- * Searches channel history for today's messages
+ * Searches channel history for today's messages from a specific user
  */
-async function findTodayMessage(channelId, searchText, token) {
+async function findTodayMessage(channelId, searchText, token, userId) {
     const oldest = getStartOfToday();
     
-    // Note: conversations.history is a GET request usually, 
-    // but Slack supports POST with JSON for consistency in some methods.
-    // However, history is best as GET or URLSearchParams for reliability.
     const url = new URL('https://slack.com/api/conversations.history');
     url.searchParams.append('channel', channelId);
     url.searchParams.append('oldest', oldest);
@@ -46,9 +43,15 @@ async function findTodayMessage(channelId, searchText, token) {
     const data = await response.json();
     if (!data.ok) throw new Error(data.error);
 
-    const match = data.messages.find(m => m.text && m.text.includes(searchText));
+    // Filter by text AND the specific user ID
+    const match = data.messages.find(m => 
+        m.user === userId && 
+        m.text && 
+        m.text.includes(searchText)
+    );
     return match ? { ts: match.ts, text: match.text } : null;
 }
+
 
 /**
  * Sends a message
