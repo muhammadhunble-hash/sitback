@@ -1,0 +1,28 @@
+{
+  "name": "sitback",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "send": "node scripts/send-message.js",
+    "list": "node scripts/list-channels.js",
+    "history": "node scripts/get-history.js",
+    "wfo": "node scripts/availability-wfo.js",
+    "so": "node scripts/availability-so.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+
+  },
+
+
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "dependencies": {
+    "@slack/web-api": "^7.15.0",
+    "dotenv": "^17.4.2"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.14"
+  }
+}
