@@ -90,9 +90,9 @@ app.get('/auth/callback', async (c) => {
  */
 app.get('/setup', (c) => {
     const userId = c.req.query('userId');
-    if (!userId) return c.redirect('/');
     return c.html(setupPage(userId));
 });
+
 
 
 /**

@@ -64,7 +64,10 @@ export const landingPage = (clientId, redirectUri) => html`
         }
         .slack-logo { width: 20px; margin-right: 12px; }
         .footer { margin-top: 2rem; font-size: 0.8rem; color: #475569; letter-spacing: 0.05em; text-transform: uppercase; }
+        .footer a { color: #6366f1; text-decoration: none; margin-left: 1rem; }
+        .footer a:hover { text-decoration: underline; }
         .setup-card { text-align: left; background: var(--card); padding: 2rem; border-radius: 20px; max-width: 600px; margin: 2rem auto; border: 1px solid rgba(255, 255, 255, 0.05); }
+
         .step { margin-bottom: 1.5rem; }
         .step h3 { color: var(--primary); margin: 0 0 0.5rem; }
         code { background: rgba(255,255,255,0.1); padding: 0.2rem 0.4rem; border-radius: 4px; font-size: 0.9rem; color: #818cf8; }
@@ -79,9 +82,12 @@ export const landingPage = (clientId, redirectUri) => html`
             <img class="slack-logo" src="https://upload.wikimedia.org/wikipedia/commons/d/d5/Slack_icon_2019.svg" alt="Slack">
             Add to Slack
         </a>
-        <div class="footer">Invite Only System</div>
+        <div class="footer">
+            Invite Only System • <a href="/setup">Manual Setup</a>
+        </div>
     </div>
 </body>
+
 </html>
 `;
 
@@ -126,8 +132,15 @@ export const setupPage = (userId) => html`
         
         <div class="card">
             <div class="badge">Your Identity</div>
-            <p>Your Slack User ID: <code>${userId}</code></p>
+            ${userId ? html`<p>Your Slack User ID: <code>${userId}</code></p>` : html`
+                <p>Enter your Slack User ID to get customized instructions:</p>
+                <form action="/setup" method="GET" style="display: flex; gap: 0.5rem; margin-top: 1rem;">
+                    <input type="text" name="userId" placeholder="U12345678" style="flex: 1; padding: 0.6rem; border-radius: 8px; border: 1px solid rgba(255,255,255,0.1); background: rgba(0,0,0,0.2); color: white;">
+                    <button type="submit" style="background: #6366f1; color: white; border: none; padding: 0.6rem 1rem; border-radius: 8px; cursor: pointer;">Go</button>
+                </form>
+            `}
         </div>
+
 
         <div class="tabs">
             <button class="tab-btn active" onclick="showTab('ios', event)">📱 iOS (Shortcuts)</button>
