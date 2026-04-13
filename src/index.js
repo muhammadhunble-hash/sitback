@@ -22,8 +22,9 @@ const adminOnly = async (c, next) => {
  * All workflow requests must provide X-User-ID and be authorized
  */
 const inviteOnly = async (c, next) => {
-    // Skip health, auth, and admin routes
-    if (['/health', '/auth', '/', '/auth/callback', '/admin/invite'].includes(c.req.path)) return await next();
+    // Skip health, auth, setup, and admin routes
+    if (['/health', '/auth', '/', '/auth/callback', '/admin/invite', '/setup'].includes(c.req.path)) return await next();
+
 
     const userId = c.req.header('X-User-ID');
 
