@@ -1,7 +1,8 @@
 import { Hono } from 'hono';
 import { findTodayMessage, postMessage } from './slack';
 import { exchangeCodeForToken, saveUserToken, isUserAuthorized, authorizeUser } from './oauth';
-import { landingPage } from './landing';
+import { landingPage, setupPage } from './landing';
+
 
 const app = new Hono();
 
@@ -68,17 +69,30 @@ app.get('/auth/callback', async (c) => {
         await saveUserToken(userId, userToken, c.env.SITBACK_STORAGE);
 
         return c.html(`
-            <div style="font-family: sans-serif; text-align: center; padding: 50px;">
+            <div style="font-family: sans-serif; text-align: center; padding: 50px; background: #0a0a0f; color: #f8fafc; height: 100vh;">
                 <h1 style="color: #6366f1;">Success! 🎉</h1>
                 <p>Sitback is now connected to your Slack account.</p>
                 <p>Your User ID is: <code>${userId}</code></p>
-                <p>Make sure you have been invited by the admin to start using the workflows.</p>
+                <div style="margin-top: 30px;">
+                    <a href="/setup?userId=${userId}" style="background: #6366f1; color: white; padding: 12px 24px; border-radius: 8px; text-decoration: none; font-weight: 600;">View Setup Instructions</a>
+                </div>
             </div>
         `);
+
     } catch (error) {
         return c.text(`Auth Error: ${error.message}`, 500);
     }
 });
+
+/**
+ * Setup Instructions Page
+ */
+app.get('/setup', (c) => {
+    const userId = c.req.query('userId');
+    if (!userId) return c.redirect('/');
+    return c.html(setupPage(userId));
+});
+
 
 /**
  * Admin: Invite a Friend
