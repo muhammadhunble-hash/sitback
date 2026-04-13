@@ -1,13 +1,13 @@
 import { Hono } from 'hono';
 import { findTodayMessage, postMessage } from './slack';
-import { exchangeCodeForToken, saveUserToken, isUserAuthorized, authorizeUser } from './oauth';
+import { exchangeCodeForToken, saveUserToken } from './oauth';
 import { landingPage, setupPage } from './landing';
-
 
 const app = new Hono();
 
 /**
  * Middleware: Admin Only (using existing API_KEY)
+ * Retained for any future admin-level actions
  */
 const adminOnly = async (c, next) => {
     const key = c.req.header('X-API-Key');
@@ -18,25 +18,23 @@ const adminOnly = async (c, next) => {
 };
 
 /**
- * Middleware: Invite-only Check
- * All workflow requests must provide X-User-ID and be authorized
+ * Middleware: Identity Check
+ * All workflow requests must provide X-User-ID and have a registered token
  */
-const inviteOnly = async (c, next) => {
-    // Skip health, auth, setup, and admin routes
-    if (['/health', '/auth', '/', '/auth/callback', '/admin/invite', '/setup'].includes(c.req.path)) return await next();
+const identityCheck = async (c, next) => {
+    // Skip health, auth, setup routes
+    if (['/health', '/auth', '/', '/auth/callback', '/setup'].includes(c.req.path)) return await next();
 
-
-    const userId = c.req.header('X-User-ID');
-
-    if (!userId) return c.json({ error: 'Missing X-User-ID header' }, 400);
-
-    // 1. Check if authorized (Invite list)
-    const authorized = await isUserAuthorized(userId, c.env.SITBACK_STORAGE);
-    if (!authorized) {
-        return c.json({ error: 'Forbidden: You have not been invited to Sitback.' }, 403);
+    // Check shared API Key (Group Security)
+    const key = c.req.header('X-API-Key');
+    if (!key || key !== c.env.API_KEY) {
+        return c.json({ error: 'Unauthorized: Access Key required' }, 401);
     }
 
-    // 2. check if token exists
+    const userId = c.req.header('X-User-ID');
+    if (!userId) return c.json({ error: 'Missing X-User-ID header' }, 400);
+
+    // Check if token exists in KV
     const token = await c.env.SITBACK_STORAGE.get(`token:${userId}`);
     if (!token) {
         return c.json({ error: 'Token missing: Please visit the landing page to authorize your account.' }, 401);
@@ -47,7 +45,7 @@ const inviteOnly = async (c, next) => {
     await next();
 };
 
-app.use('*', inviteOnly);
+app.use('*', identityCheck);
 
 /**
  * Landing Page
@@ -66,7 +64,7 @@ app.get('/auth/callback', async (c) => {
     try {
         const { userId, userToken } = await exchangeCodeForToken(code, c.env);
         
-        // Save the token to KV
+        // Save the token to KV (Anyone who authenticates is now allowed)
         await saveUserToken(userId, userToken, c.env.SITBACK_STORAGE);
 
         return c.html(`
@@ -79,7 +77,6 @@ app.get('/auth/callback', async (c) => {
                 </div>
             </div>
         `);
-
     } catch (error) {
         return c.text(`Auth Error: ${error.message}`, 500);
     }
@@ -91,21 +88,6 @@ app.get('/auth/callback', async (c) => {
 app.get('/setup', (c) => {
     const userId = c.req.query('userId');
     return c.html(setupPage(userId));
-});
-
-
-
-/**
- * Admin: Invite a Friend
- * POST /admin/invite
- * Header: X-API-Key (Admin)
- */
-app.post('/admin/invite', adminOnly, async (c) => {
-    const { userId } = await c.req.json();
-    if (!userId) return c.json({ error: 'Missing userId in body' }, 400);
-
-    await authorizeUser(userId, c.env.SITBACK_STORAGE);
-    return c.json({ success: true, message: `User ${userId} invited successfully.` });
 });
 
 /**

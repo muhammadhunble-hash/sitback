@@ -36,18 +36,3 @@ export async function exchangeCodeForToken(code, env) {
 export async function saveUserToken(userId, token, kv) {
     await kv.put(`token:${userId}`, token);
 }
-
-/**
- * Checks if a user is in the authorized (invite-only) list
- */
-export async function isUserAuthorized(userId, kv) {
-    const auth = await kv.get(`auth:${userId}`);
-    return auth === 'true';
-}
-
-/**
- * Authorizes a user (Admin only)
- */
-export async function authorizeUser(userId, kv) {
-    await kv.put(`auth:${userId}`, 'true');
-}

@@ -83,8 +83,9 @@ export const landingPage = (clientId, redirectUri) => html`
             Add to Slack
         </a>
         <div class="footer">
-            Invite Only System • <a href="/setup">Manual Setup</a>
+            Connect & Automate • <a href="/setup">Manual Setup</a>
         </div>
+
     </div>
 </body>
 
