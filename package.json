@@ -5,10 +5,12 @@
   "main": "index.js",
   "scripts": {
     "start": "node server.js",
+    "dev": "wrangler dev",
     "send": "node scripts/send-message.js",
     "list": "node scripts/list-channels.js",
     "history": "node scripts/get-history.js",
     "test": "echo \"Error: no test specified\" && exit 1"
+
   },
   "keywords": [],
   "author": "",
