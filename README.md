@@ -1,83 +1,63 @@
-# Sitback: Slack Workflow Automation 🚀
+# Sitback: Slack Workflow Worker ☁️
 
-A collection of lightweight, standalone scripts designed to automate your Slack workflows with ease.
+A high-performance, stateless **Cloudflare Worker** designed to automate your Slack workflows with the **Hono** framework.
 
 ## 🛠 Features
 
-- **Direct Flows**: Run automation directly from your terminal.
-- **User Proxy**: Send messages and interact on your behalf using a User Token.
-- **Premium CLI**: Beautifully formatted terminal output with ANSI colors.
-- **Lightweight**: Zero-server overhead; execute scripts only when needed.
+- **Stateless Reliability**: Automatically searches Slack history for "today's" messages to manage threading and prevent duplicates.
+- **Lightning Fast**: Powered by Cloudflare's edge network and the Fetch API.
+- **Secure Access**: All endpoints are protected by an `X-API-Key`.
+- **WFO/SO Automation**: Trigger your availability flows remotely via HTTP.
 
-## 🚀 Getting Started
+## 🚀 Deployment (Cloudflare Workers)
 
-### 1. Installation
-Install the necessary dependencies:
-```bash
-npm install
-```
+1. **Install Wrangler CLI** and login:
+   ```bash
+   npx wrangler login
+   ```
 
-### 2. Configuration
-The project uses a `.env` file for configuration. (Pre-configured for you).
-```env
-SLACK_USER_TOKEN=xoxp-...
-DEFAULT_CHANNEL_ID=C07KKCSHGPJ
-```
+2. **Configure Secrets**:
+   Set your Slack token and API key as encrypted secrets:
+   ```bash
+   npx wrangler secret put SLACK_USER_TOKEN
+   npx wrangler secret put API_KEY
+   ```
 
-## 🏗 Available Workflows
+3. **Deploy**:
+   ```bash
+   npx wrangler deploy
+   ```
 
-### 📬 Send Message
-Sends a stylized message to a channel on your behalf. Supports IDs or human-readable names via `channels.json`.
-```bash
-# Using positional arguments
-npm run send -- "Hello from Sitback! 🚀" "general"
+## 🏗 API Specification
 
-# Using explicit flags
-npm run send -- --text "Hello" --channel "general"
-```
+All requests must include the header: `X-API-Key: <your_key>`
 
-### 🏢 Office Availability Workflow
-Designed to be triggered by macOS Shortcuts (e.g., when connecting to office Wi-Fi or shutting down).
+### ☀️ Morning Check-in (WFO)
+`POST /wfo`
+- Checks if "WFO" was already sent today.
+- If not, sends "WFO" to the `availability` channel.
 
-#### ☀️ Morning Check-in (WFO)
-Sends "WFO" to the `availability` channel. It automatically prevents duplicate messages if run multiple times in one day.
-```bash
-npm run wfo
-```
+### 🌙 Evening Sign-off (SO)
+`POST /so`
+- Finds today's "WFO" message ID.
+- Replies "SO" to that specific thread.
 
-#### 🌙 Evening Sign-off (SO)
-Replies "SO" to the thread of your morning "WFO" message.
-```bash
-npm run so
-```
+### 💓 Health Check
+`GET /health`
+- Verifies worker status.
 
-### 📜 Get History
-Fetches recent activity from a specific channel.
-```bash
-# Get last 5 messages from default channel
-npm run history
+## 🗺 Local Development
 
-# Get last 10 messages from a specific channel
-npm run history -- "CHANNEL_ID" 10
-```
-
-## 🗺 Channel Mapping
-Since the project currently lacks `conversations.list` scope, you can manage your own channel nicknames in `channels.json`:
-```json
-{
-    "general": "C07KKCSHGPJ",
-    "availability": "CAP8WL9EZ",
-    "abdullah-farewell": "C07KKCSHGPJ"
-}
-```
-
-## 📂 Project Structure
-
-- `scripts/`: Standalone workflow scripts.
-- `slack.js`: Centralized Slack client initialization.
-- `.env`: (Ignored by Git) Your sensitive credentials.
-- `package.json`: Script definitions and dependencies.
-- `state.json`: (Local only) Tracks daily workflow state for threading.
+1. **Install dependencies**: `npm install`
+2. **Start Dev Server**:
+   ```bash
+   npx wrangler dev
+   ```
+3. **Trigger via curl**:
+   ```bash
+   curl -X POST http://localhost:8787/wfo \
+     -H "X-API-Key: sitback_secure_key_3139f7d0"
+   ```
 
 ---
 *Created with ❤️ by Sitback Automation*

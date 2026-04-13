@@ -4,23 +4,21 @@
   "description": "",
   "main": "index.js",
   "scripts": {
+    "start": "node server.js",
     "send": "node scripts/send-message.js",
     "list": "node scripts/list-channels.js",
     "history": "node scripts/get-history.js",
-    "wfo": "node scripts/availability-wfo.js",
-    "so": "node scripts/availability-so.js",
     "test": "echo \"Error: no test specified\" && exit 1"
-
   },
-
-
   "keywords": [],
   "author": "",
   "license": "ISC",
   "type": "commonjs",
   "dependencies": {
     "@slack/web-api": "^7.15.0",
-    "dotenv": "^17.4.2"
+    "dotenv": "^17.4.2",
+    "express": "^5.2.1",
+    "hono": "^4.12.12"
   },
   "devDependencies": {
     "nodemon": "^3.1.14"

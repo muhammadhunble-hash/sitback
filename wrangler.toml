@@ -1,0 +1,10 @@
+name = "sitback-worker"
+main = "src/index.js"
+compatibility_date = "2024-04-01"
+
+[vars]
+# Add non-secret variables here
+DEFAULT_CHANNEL_ID = "C07KKCSHGPJ"
+AVAILABILITY_CHANNEL = "CAP8WL9EZ"
+
+# Secrets (Token, API_KEY) should be set using 'wrangler secret put'
