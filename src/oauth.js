@@ -1,5 +1,6 @@
 /**
  * Exchanges the temporary Slack OAuth code for a permanent User Token
+ * and generates a unique Sitback Secret for simplified setup.
  */
 export async function exchangeCodeForToken(code, env) {
     const url = 'https://slack.com/api/oauth.v2.access';
@@ -23,16 +24,30 @@ export async function exchangeCodeForToken(code, env) {
         throw new Error(data.error);
     }
 
-    // Return the user ID and their specific user token
+    const userId = data.authed_user.id;
+    const slackToken = data.authed_user.access_token;
+
+    // Generate a unique Sitback Secret for this user
+    // We use a prefix 'sb_' to make it recognizable
+    const sitbackSecret = `sb_${crypto.randomUUID().replace(/-/g, '')}`;
+
     return {
-        userId: data.authed_user.id,
-        userToken: data.authed_user.access_token
+        userId,
+        slackToken,
+        sitbackSecret
     };
 }
 
 /**
- * Saves a user token to KV storage
+ * Saves tokens and secrets to KV storage
  */
-export async function saveUserToken(userId, token, kv) {
-    await kv.put(`token:${userId}`, token);
+export async function saveUserSession(userId, slackToken, sitbackSecret, kv) {
+    // 1. Map Secret -> UserID
+    await kv.put(`secret:${sitbackSecret}`, userId);
+    
+    // 2. Map UserID -> SlackToken
+    await kv.put(`token:${userId}`, slackToken);
+
+    // 3. Store the Secret for the user so we can show it on the setup page if they return
+    await kv.put(`user_secret:${userId}`, sitbackSecret);
 }
